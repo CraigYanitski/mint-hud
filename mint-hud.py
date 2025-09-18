@@ -57,12 +57,13 @@ class ShortcutsOverlay(Gtk.Window):
         if visual and screen.is_composited():
             self.set_visual(visual)
         self.set_app_paintable(True)
-        self.set_opacity(0.5)
+        self.set_opacity(0.7)
         
         # Connect events
         self.connect("draw", self.on_draw)
         self.connect("key-press-event", self.on_key_press)
         self.connect("destroy", self.on_destroy)
+        self.connect("notify::is-active", self.on_focus_change)
         
         # Create UI
         self.setup_ui()
@@ -71,28 +72,28 @@ class ShortcutsOverlay(Gtk.Window):
         self.set_position(Gtk.WindowPosition.CENTER)
         
         # Set default size
-        self.set_default_size(600, 650)
+        self.set_default_size(800, 950)
 
         # Watch for key press events
         self.set_events(Gdk.EventMask.KEY_PRESS_MASK)
         
     def on_draw(self, widget, cr):
         # Draw transparent background
-        cr.set_source_rgba(0.1, 0.1, 0.1, 0.55)  # Dark semi-transparent
+        cr.set_source_rgba(0, 0, 0, 0)  # Dark semi-transparent
         cr.set_operator(Gdk.OPERATOR_SOURCE)
         cr.paint()
         return False
 
     def setup_ui(self):
         # Main container
-        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
         main_box.set_border_width(20)
         
         # Title
         title = Gtk.Label()
         title.set_markup("<span size='x-large' weight='bold'>Keyboard Shortcuts</span>")
         title.set_justify(Gtk.Justification.CENTER)
-        main_box.pack_start(title, False, False, 5)
+        main_box.pack_start(title, False, False, 0)
         
         # Shortcuts container
         shortcuts_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
@@ -107,11 +108,11 @@ class ShortcutsOverlay(Gtk.Window):
         shortcuts = [
             ("Super", "Open menu/search"),
             ("Super + A", "Show applications"),
+            ("Ctrl + Alt + L", "Lock screen"),
             ("Super + D", "Show desktop"),
             ("Alt + Tab", "Switch applications"),
             ("Alt + `", "Switch windows of same application"),
             ("Ctrl + Alt + T", "Open terminal"),
-            ("Ctrl + Alt + L", "Lock screen"),
             ("Ctrl + Alt + Arrow Keys", "Switch workspaces"),
             ("Ctrl + Alt + Shift + Arrow Keys", "Move window to another workspace"),
             ("Print Screen", "Take screenshot"),
@@ -129,11 +130,11 @@ class ShortcutsOverlay(Gtk.Window):
         categories = {
             "System": [
                 ("Super", "Open menu/search"),
-                ("Super + A", "Show applications"),
-                ("Super + D", "Show desktop"),
-                ("Ctrl + Alt + T", "Open terminal"),
+                ("Super + Enter", "Launch this application"),
                 ("Ctrl + Alt + L", "Lock screen"),
                 ("Ctrl + Alt + Del", "Log out"),
+                ("Ctrl + Alt + T", "Open terminal"),
+                ("Super + D", "Show desktop"),
                 ("Alt + F2", "Run command dialog"),
                 ("Print Screen", "Take screenshot")
             ],
@@ -148,11 +149,11 @@ class ShortcutsOverlay(Gtk.Window):
                 ("Super + H", "Hide/unhide window")
             ],
             "Workspaces": [
-                ("Ctrl + Alt + ↑/↓", "Switch workspaces vertically"),
                 ("Ctrl + Alt + ←/→", "Switch workspaces horizontally"),
                 ("Ctrl + Alt + Shift + ↑/↓", "Move window between workspaces vertically"),
                 ("Ctrl + Alt + Shift + ←/→", "Move window between workspaces horizontally"),
-                ("Super + P", "Show workspaces overview"),
+                ("Ctrl + Alt + ↑", "Show workspaces overview"),
+                ("Ctrl + Alt + ↓", "Exploded view of current workspace"),
                 ("Ctrl + Alt + D", "Show desktop (minimize all)")
             ],
             "Applications": [
@@ -164,7 +165,38 @@ class ShortcutsOverlay(Gtk.Window):
                 ("Ctrl + O", "Open"),
                 ("Ctrl + Z", "Undo"),
                 ("Ctrl + Shift + Z", "Redo")
-            ]
+            ],
+            "Browser": [
+                ("Alt + ", "Back"),
+                ("Ctrl + [", ""),
+                ("Alt + ", "Forward"),
+                ("Ctrl + ]", ""),
+                ("Alt + Home", "Home"),
+                ("Ctrl + R", "Reload page"),
+                ("Ctrl + N", "New window"),
+                ("Ctrl + Shift + N", "Open last closed window"),
+                ("Ctrl + T", "New tab"),
+                ("Ctrl + Shift + T", "Open last closed tab"),
+                ("Ctrl + Z", "Undo"),
+                ("Ctrl + Shift + Z", "Redo"),
+                ("Ctrl + Shift + I", "Web developer tools"),
+                ("Ctrl + Shift + C", "Inspect HTML element"),
+                ("Ctrl + Shift + J", "Browser console"),
+            ],
+            "Terminal": [
+                ("Ctrl + Shift + T", "New tab"),
+                ("Ctrl + Shift + N", "New window"),
+                ("Ctrl + Shift + W", "Close tab"),
+                ("Ctrl + Shift + Q", "Close window"),
+                ("Ctrl + Shift + C", "Copy text"),
+                ("Ctrl + Shift + V", "Paste text"),
+                ("Ctrl + Shift + F", "Find"),
+                ("Ctrl + Shift + G", "Find Next"),
+                ("Ctrl + Shift + H", "Find Previous"),
+                ("Ctrl + Shift + J", "Clear highlight"),
+                ("Ctrl + PageUp", "Switch to previous tab"),
+                ("Ctrl + PageDown", "Switch to next tab"),
+            ],
         }
         
         # Create a page for each category
@@ -180,8 +212,8 @@ class ShortcutsOverlay(Gtk.Window):
 
             # Add shortcuts to the container
             for keys, description in shortcuts:
-                shortcut_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=15)
-                shortcut_row.set_homogeneous(False)
+                shortcut_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+                shortcut_row.set_homogeneous(True)
 
                 keys_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
 
@@ -202,12 +234,13 @@ class ShortcutsOverlay(Gtk.Window):
                 #keys_label.set_markup(f"<span weight='bold'>{keys}</span>")
                 #keys_label.set_xalign(0)
                 keys_box.set_size_request(200, -1)
+                #keys_box.set_justify(Gtk.Justification.CENTER)
                 
                 desc_label = Gtk.Label(label=description)
                 desc_label.set_xalign(0)
                 desc_label.set_line:wrap(True)
                 
-                shortcut_row.pack_start(keys_box, False, False, 0)
+                shortcut_row.pack_start(keys_box, True, True, 0)
                 shortcut_row.pack_start(desc_label, True, True, 0)
                 
                 shortcuts_box.pack_start(shortcut_row, False, False, 0)
@@ -225,10 +258,13 @@ class ShortcutsOverlay(Gtk.Window):
         main_box.pack_start(notebook, True, True, 0)
         
         # Footer note
+        footer_box = Gtk.Box()
+        footer_box.get_style_context().add_class("footer")
         footer = Gtk.Label()
-        footer.set_markup("<span style='italic' size='small'>Press 'ESC' or 'q' to close</span>")
+        footer.set_markup("<span style='italic' size='large'>Press 'ESC' or 'q' to close</span>")
         footer.set_justify(Gtk.Justification.CENTER)
-        main_box.pack_start(footer, False, False, 5)
+        footer_box.pack_start(footer, True, False, 0)
+        main_box.pack_start(footer_box, False, False, 0)
         
         self.add(main_box)
         
@@ -251,12 +287,21 @@ class ShortcutsOverlay(Gtk.Window):
         scrolledwindow {
             border: 1px solid rgba(0, 0, 0, 0.2);
             border-radius: 6px;
-            background-color: rgba(0, 0, 0, 0.1);
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .footer {
+            background-color: rgba(0, 0, 0, 0.8);
+            border: none;
+            border-radius: 0 0 12px 12px;
+            padding: 6px 12px;
+            margin: 0;
+            color: #ffffff;
         }
 
         .key-box {
-            background-color: rgba(0, 0, 0, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background-color: rgba(125, 125, 125, 0.15);
+            border: 1px solid rgba(0, 0, 0, 0.3);
             border-radius: 5px;
             padding: 4px 8px;
             font-weight: bold;
@@ -265,7 +310,7 @@ class ShortcutsOverlay(Gtk.Window):
         }
 
         .plus-sign {
-            color: rgba(0, 0, 0, 0.7);
+            color: rgba(255, 255, 255, 0.7);
             font-weight: bold;
             padding: 0px 4px;
         }
@@ -281,9 +326,9 @@ class ShortcutsOverlay(Gtk.Window):
         }
 
         notebook tab {
-            background-color: rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 6px 6px 0 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            border: 2px solid rgba(0, 0, 0, 0.8);
+            border-radius: 12px 12px 0 0;
             padding: 6px 12px;
             margin: 0 2px;
             color: #ffffff;
@@ -291,11 +336,16 @@ class ShortcutsOverlay(Gtk.Window):
 
         notebook tab:checked {
             background-color: rgba(50, 150, 100, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(0, 0, 0, 0.8);
         }
 
         notebook tab:hover {
-            background-color: rgba(0, 0, 0, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.8)
+        }
+
+        scrolledwindow {
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 6px 6px 0 0;
         }
         """
         style_provider.load_from_data(css.encode())
@@ -312,6 +362,10 @@ class ShortcutsOverlay(Gtk.Window):
             Gtk.main_quit()
             return True
         return False
+
+    def on_focus_change(self, window, pspec):
+        if not window.get_is_active():
+            Gtk.main_quit()
 
     def on_destroy(self, widget):
         # Clean up lock file
